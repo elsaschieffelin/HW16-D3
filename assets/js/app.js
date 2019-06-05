@@ -1,4 +1,4 @@
-d3.csv("data.csv", function(error, data) {
-    console.log(data);
-    if (error) throw error;
+d3.csv("../assets/data/data.csv", function (data) {
+    console.log(data)
+    
 });
