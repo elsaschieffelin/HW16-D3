@@ -1,35 +1,39 @@
-
+//set up SVG
 const SVGWIDTH = 960;
 const SVGHEIGHT = 500;
 
-let svg=d3.select('.scatter').append('svg').attr('with', SVGWIDTH).attr('height', SVGHEIGHT);
+let svg=d3.select('.scatter')
+.append('svg')
+.attr('with', SVGWIDTH)
+.attr('height', SVGHEIGHT);
 
-
+//set up margins
 const MARGIN = {
-    top: 20,
-    right: 40, 
-    bottom: 60,
-    left: 50
+    top: 10,
+    right: 10, 
+    bottom: 50,
+    left: 40
 };
 
 const SCATTERWIDTH = SVGWIDTH - MARGIN.left - MARGIN.right;
 const SCATTERHEIGHT = SVGHEIGHT - MARGIN.top - MARGIN.bottom;
 
-
+//set up chartgroup as new group inside SVG
 const CHARTGROUP = svg.append('g')
     .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`);
 
 const CHOSENX = 'poverty';
 
-function xScale(data,CHOSENX) {
-    var xLinearScale = d3.scaleLinear().domain([d3.min(data, d=>d[CHOSENX]) * 0.8,
-        d3.max(data, d=>d[CHOSENX]) * 2.1
+//create scalar functions
+function xScale(censusData,CHOSENX) {
+    var xLinearScale = d3.scaleLinear().domain([d3.min(censusData, d=>d[CHOSENX]) * 0.8,
+        d3.max(censusData, d=>d[CHOSENX]) * 2.1
         ]).range([0, SCATTERWIDTH]);
     return xLinearScale;
 }
-function yScale(data) {
+function yScale(censusData) {
     var yLinearScale = d3.scaleLinear()
-    .domain([0, d3.max(data, d=>d.smokes)])
+    .domain([0, d3.max(censusData, d=>d.smokes)])
     .range([SCATTERHEIGHT, 0]);
     return yLinearScale;
 }
@@ -68,31 +72,35 @@ function updateToolTip(CHOSENX, circlesGroup) {
     return circlesGroup;
 }   
 
-d3.csv("../assets/data/data.csv", function (data) {
-    console.log(data);
-   /*
+// READ IN DATA //
+
+d3.csv("../assets/data/data.csv", function (censusData) {
+   // console.log(parseFloat(censusData.smokes));
+   
     //smokers vs. poverty
-   data.forEach(function(data) {
-       data.poverty = parseFloat(data.poverty);
-       data.smokes = parseFloat(data.smokes);
-       data.income = parseFloat(data.income);
-   });
-   */
-    var xLinearScale = xScale(data, CHOSENX);
-    var yLinearScale = yScale(data);
+    //parse data
+        Object.entries(censusData).forEach(function(d) {
+       d.poverty = parseFloat(censusData.poverty);
+       d.smokes = parseFloat(censusData.smokes);
+       d.income = parseFloat(censusData.income);
+       });
 
-    var bottomAxis = d3.axisBottom(xLinearScale);
-    var leftAxis = d3.axisLeft(yLinearScale);
-
-    var xAxis = CHARTGROUP.append('g')
+//x and y scale
+    let xLinearScale = xScale(censusData, CHOSENX);
+    let yLinearScale = yScale(censusData);
+//builds bottom and left axis
+    let bottomAxis = d3.axisBottom(xLinearScale);
+    let leftAxis = d3.axisLeft(yLinearScale);
+//adds axes to chartgroup
+    let xAxis = CHARTGROUP.append('g')
         .classed('x-axis', true)
         .attr('tranform', `translate(0, ${SCATTERHEIGHT})`)
         .call(bottomAxis);
     
     CHARTGROUP.append('g').call(leftAxis);
-
+//adds circles
     var circlesGroup = CHARTGROUP.selectAll('circle')
-        .data(data)
+        .data(censusData)
         .enter()
         .append('circle')
         .attr('cx', d=> xLinearScale(d[CHOSENX]))
@@ -100,29 +108,27 @@ d3.csv("../assets/data/data.csv", function (data) {
         .attr('r', 20)
         .attr('fill', 'blue')
         .attr('opacity', '.8');    
-
+//create 2 x axis labels
     var labelsGroup = CHARTGROUP.append('g')
         .attr('transform', `translate(${SCATTERWIDTH/2}, ${SCATTERHEIGHT+20})`);
-    
-    /*
-        //x label
-    var povertyLabel = labelsGroup.append('text')
+      
+    let povertyLabel = labelsGroup.append('text')
         .attr('x', 0)
         .attr('y', 20)
         .attr('value', 'poverty')
-        .classes('active', true)
+        .classed('active', true)
         .text('Poverty (%)');
     
-    
+
     //y label
     var smokingLabel = labelsGroup.append('text')
         .attr('x', 0)
         .attr('y', 40)
         .attr('value', 'smokes')
-        .classes('inactive', true)
+        .classed('inactive', true)
         .text('Smokers (%)');
-    */
-    //append y axis
+ 
+    //append y 
 
     CHARTGROUP.append('text')
         .attr('transform', 'rotate(-90)')
@@ -139,7 +145,7 @@ d3.csv("../assets/data/data.csv", function (data) {
         var value = d3.select(this).att('value');
         if (value !== CHOSENX) {
             CHOSENX = value;
-            xLinearScale = xScale(data, CHOSENX);
+            xLinearScale = xScale(censusData, CHOSENX);
             xAxis = renderAxes(xLinearScape, xAxis);
             circlesGroup = renderCircles(circlesGroup, xLinearScale, CHOSENX);
             circlesGroup = updateToolTip(CHOSENX, circlesGroup);
